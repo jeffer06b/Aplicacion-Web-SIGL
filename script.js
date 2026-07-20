@@ -9,7 +9,12 @@ document.addEventListener("DOMContentLoaded", function() {
     const totalEnviosElemento = document.getElementById("total-envios");
     const mensajeValidacion = document.getElementById("mensaje-validacion");
 
-    // Arreglo de objetos para representar los datos
+    // Elementos del botón para el Spinner (Semana 8)
+    const btnSpinner = document.getElementById("spinner-carga");
+    const btnTexto = document.getElementById("texto-btn");
+    const btnSubmit = document.getElementById("btn-submit");
+
+    // Arreglo de objetos simulando BD
     let datosEnvios = [
         { id: 1, cliente: "Distribuidora Andina", descripcion: "Lote de suministros médicos", categoria: "Urgente" },
         { id: 2, cliente: "Tech Store Ecuador", descripcion: "Paleta de componentes de PC", categoria: "Estándar" }
@@ -17,10 +22,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // --- FUNCIONES DE RENDERIZADO DINÁMICO --- //
     const renderizarDatos = () => {
-        // Limpiamos el contenedor
         listaEnvios.innerHTML = "";
         
-        // Condición para mostrar estado vacío
         if (datosEnvios.length === 0) {
             listaEnvios.innerHTML = `
                 <div class="col-12">
@@ -34,7 +37,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
         totalEnviosElemento.textContent = datosEnvios.length;
 
-        // Estructura repetitiva
         datosEnvios.forEach((envio) => {
             let colorBorde = "border-success";
             if (envio.categoria === "Urgente") colorBorde = "border-danger";
@@ -42,23 +44,45 @@ document.addEventListener("DOMContentLoaded", function() {
 
             const nuevaTarjeta = document.createElement("div");
             nuevaTarjeta.className = "col-md-6 col-lg-6 mb-3 item-envio";
+            
+            // Tarjetas mejoradas con nuevos botones (Semana 8)
             nuevaTarjeta.innerHTML = `
                 <div class="card h-100 shadow-sm border-start ${colorBorde} border-4">
-                    <div class="card-body">
-                        <span class="badge bg-secondary mb-2">${envio.categoria}</span>
+                    <div class="card-body d-flex flex-column">
+                        <span class="badge bg-secondary mb-2 align-self-start">${envio.categoria}</span>
                         <h5 class="card-title fw-bold">${envio.cliente}</h5>
-                        <p class="card-text text-muted small">${envio.descripcion}</p>
-                        <button type="button" class="btn btn-outline-danger btn-sm btn-eliminar fw-bold w-100 mt-2">
-                            ❌ Eliminar
-                        </button>
+                        <p class="card-text text-muted small flex-grow-1">${envio.descripcion}</p>
+                        
+                        <div class="d-flex gap-2 mt-3">
+                            <button type="button" class="btn btn-outline-info btn-sm fw-bold flex-fill btn-detalles">
+                                🔍 Detalles
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-sm fw-bold flex-fill btn-eliminar">
+                                ❌ Eliminar
+                            </button>
+                        </div>
                     </div>
                 </div>
             `;
             
-            // Asignación de evento limpia (evita advertencias del editor)
+            // Lógica para Eliminar sin usar onclick en el HTML (Mejor práctica)
             nuevaTarjeta.querySelector('.btn-eliminar').addEventListener('click', () => {
                 datosEnvios = datosEnvios.filter(e => e.id !== envio.id);
                 renderizarDatos();
+            });
+
+            // Lógica para Modal de Detalles (Semana 8)
+            nuevaTarjeta.querySelector('.btn-detalles').addEventListener('click', () => {
+                const modalBody = document.getElementById("modal-body-content");
+                modalBody.innerHTML = `
+                    <p class="mb-2"><strong>ID de Rastreo:</strong> <span class="text-primary fw-bold">#000${envio.id}</span></p>
+                    <p class="mb-2"><strong>Cliente:</strong> ${envio.cliente}</p>
+                    <p class="mb-2"><strong>Descripción de Carga:</strong> ${envio.descripcion}</p>
+                    <p class="mb-0"><strong>Categoría:</strong> <span class="badge bg-secondary">${envio.categoria}</span></p>
+                `;
+                
+                const modal = new bootstrap.Modal(document.getElementById('modalDetalles'));
+                modal.show();
             });
 
             listaEnvios.appendChild(nuevaTarjeta);
@@ -89,7 +113,7 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     });
 
-    // --- EVENTO SUBMIT --- //
+    // --- EVENTO SUBMIT (Actualizado con Spinner Semana 8) --- //
     formulario.addEventListener("submit", function(evento) {
         evento.preventDefault();
 
@@ -100,31 +124,45 @@ document.addEventListener("DOMContentLoaded", function() {
         if (clienteValido && descripcionValida && categoriaValida) {
             mensajeValidacion.classList.add("d-none");
 
-            const nuevoId = datosEnvios.length > 0 ? Math.max(...datosEnvios.map(e => e.id)) + 1 : 1;
-            
-            datosEnvios.push({
-                id: nuevoId,
-                cliente: inputCliente.value.trim(),
-                descripcion: inputDescripcion.value.trim(),
-                categoria: selectCategoria.value
-            });
+            // Activar estado de carga en el botón
+            btnSpinner.classList.remove("d-none");
+            btnTexto.textContent = " Procesando...";
+            btnSubmit.disabled = true;
 
-            renderizarDatos();
+            // Simular un tiempo de procesamiento en servidor de 1.5 segundos
+            setTimeout(() => {
+                const nuevoId = datosEnvios.length > 0 ? Math.max(...datosEnvios.map(e => e.id)) + 1 : 1;
+                
+                datosEnvios.push({
+                    id: nuevoId,
+                    cliente: inputCliente.value.trim(),
+                    descripcion: inputDescripcion.value.trim(),
+                    categoria: selectCategoria.value
+                });
 
-            mensajeValidacion.className = "alert alert-success mt-3";
-            mensajeValidacion.textContent = "✅ ¡Registro validado y guardado correctamente!";
-            mensajeValidacion.classList.remove("d-none");
+                renderizarDatos();
 
-            formulario.reset();
-            [inputCliente, inputDescripcion, selectCategoria].forEach(el => el.classList.remove("is-valid", "is-invalid"));
+                mensajeValidacion.className = "alert alert-success mt-3 shadow-sm";
+                mensajeValidacion.innerHTML = "<strong>✅ Éxito:</strong> ¡Registro guardado correctamente!";
+                mensajeValidacion.classList.remove("d-none");
+
+                formulario.reset();
+                [inputCliente, inputDescripcion, selectCategoria].forEach(el => el.classList.remove("is-valid", "is-invalid"));
+
+                // Restaurar el botón a la normalidad
+                btnSpinner.classList.add("d-none");
+                btnTexto.textContent = "Registrar en Sistema";
+                btnSubmit.disabled = false;
+
+            }, 1200); // 1200 ms = 1.2 segundos
 
         } else {
-            mensajeValidacion.className = "alert alert-danger mt-3";
-            mensajeValidacion.textContent = "⚠️ Error: Por favor, corrija los campos antes de continuar.";
+            mensajeValidacion.className = "alert alert-danger mt-3 shadow-sm";
+            mensajeValidacion.innerHTML = "<strong>⚠️ Error:</strong> Por favor, corrija los campos marcados.";
             mensajeValidacion.classList.remove("d-none");
         }
     });
 
-    // Pintar los datos al cargar
+    // Pintar los datos iniciales al cargar
     renderizarDatos();
 });
